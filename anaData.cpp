@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 #include "anaTrack.h"
 using namespace std;
 
@@ -21,7 +22,7 @@ const double twoPower[10] = {1.0,
 
 int main()
 {
-    ifstream fin("onetrack.raw", std::ifstream::binary);
+    ifstream fin("manytracks.raw", std::ifstream::binary);
 
 
     int trackNum = 0;
@@ -29,6 +30,8 @@ int main()
     double TDC_tmp, x_tmp, y_tmp;
     int i;
     track trackData;
+
+    double m, c;
 
     // while input and process the first of the eight hits, loop for the seven rest
     while( fin.read(reinterpret_cast<char*>(&dataChunck), sizeof (dataChunck)) ){
@@ -58,11 +61,22 @@ int main()
             trackData.hitData[j].x = x_tmp;
             trackData.hitData[j].y = y_tmp += double ( int (x_tmp) % 2 ) * 0.5; // account for the y offset in cm
         }
-        trackNum ++;
-
+/*
         for (int i = 0; i < 8; i++){
-            cout << trackData.hitData[i].x << " " << trackData.hitData[i].y << " " << trackData.hitData[i].TDC << endl;
+            cout << " (" << fixed << setprecision(2) << trackData.hitData[i].x << ", " << fixed << setprecision(2) << trackData.hitData[i].y << ")   " << setw(5) << trackData.hitData[i].TDC << endl;
         }
+*/
+        anaTrack aaa(hitsPerTrack);
+        aaa.receiveTrackData(trackData);
+        aaa.calcPath();
+
+        m = aaa.returnSlope();
+        c = aaa.returnInterception();
+
+
+        trackNum ++;
+        cout << "Track " << trackNum << ": y = " << fixed << setprecision(5) << m << "x + " << c << endl;
+
     }
     return 0;
 }

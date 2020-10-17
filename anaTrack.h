@@ -22,13 +22,16 @@ struct track
 class anaTrack
 {
 private:
-
+    int hitsPerTrack;
+    track trackData;
+    double m, c;     // track path : y = m*x + c  
 public:
-    anaTrack();
-    void hello();
+    anaTrack(int n); // n = hitsPerTrack
+    void receiveTrackData(track data);
+    void calcPath();
 
-    // void receiveTrackData(track data);
-
+    double returnSlope();
+    double returnInterception();
     // return slope and y-interception
 };
 
