@@ -117,7 +117,7 @@ auto start = std::chrono::high_resolution_clock::now();
 
     }
     cout << "#---------------------------------------------#" << endl;
-    cout << "         avg v = " << avgDriftV << " ns" << endl;
+    cout << "         avg v = " << avgDriftV << " um/ns" << endl;
     cout << "#---------------------------------------------#" << endl;
     cout << "       avg ang = " << avgAng << " deg" << endl;
     cout << "     sigma ang = " << sqrt(varAng) << " deg" << endl;
