@@ -24,14 +24,26 @@ class anaTrack
 private:
     int hitsPerTrack;
     track trackData;
-    double m, c;     // track path : y = m*x + c  
+    double m, c;     // track path : y = m*x + c
+    double avgDriftVelocity;
+    bool vetoTrack;
 public:
     anaTrack(int n); // n = hitsPerTrack
     void receiveTrackData(track data);
-    void calcPath();
+    void calcTrack();
+    void outputData();
+    void checkTrack();
+
+    bool trackRejected();
 
     double returnSlope();
     double returnInterception();
+    double returnAvgDriftVelocity();
+
+
+    //void calcTrack_test();
+    //double evaluateTrack(double slope, double interception);
+
     // return slope and y-interception
 };
 

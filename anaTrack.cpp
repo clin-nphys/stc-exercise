@@ -1,21 +1,60 @@
 #include <iostream>
 #include <string>
+#include <cmath>
+#include <fstream>
+#include <algorithm>
 #include "anaTrack.h"
 using namespace std;
 
-#define ASmallNum      0.05
+//#define ASmallNum      0.1
+//#define ASmallNum      0.01
+#define ASmallNum      0.001
+//define ASmallNum      0.0001
+//#define ASmallNum      0.00001
+
+ofstream fout("fitData.dat", std::ios_base::app);
 
 //constructor
 anaTrack::anaTrack(int n)
 {
     hitsPerTrack = n;
+    vetoTrack = 0;
 }
 
+    
+double d[8], ang, v[8];
 
 bool approxEqual(double a, double b)
 {
     if (abs(a - b) / b < ASmallNum) return 1;
     else return 0;
+}
+
+// Rreturn distance from point (x, y) to line y = mx + c
+double dist(double x, double y, double m, double c)
+{
+    double xx;
+    
+    xx = c + m * x - y;
+    return sqrt( xx * xx / (m * m + 1) ) * 10000.0; //[d] = um
+}
+
+void anaTrack::checkTrack()
+{
+    ang = atan(m) * 180.0 / M_PI;;
+    if ((ang >= 0.462 && ang <= 0.464) || (ang <= -0.462 && ang >= -0.464)) { // cut out the weird noise
+        vetoTrack = 1;
+        return;
+    }
+
+    for (int i = 0; i < hitsPerTrack; i++){
+        d[i] = dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c); //[d] = um
+        v[i] = d[i] / trackData.hitData[i].TDC;
+        if (v[i] > 56.5 || v[i] < 48.5) { // cut out weird velocity. Limits are strick because the peak is sharp.
+            vetoTrack = 1;
+            return;
+        }
+    }
 }
 
 void anaTrack::receiveTrackData(track data)
@@ -38,7 +77,7 @@ void anaTrack::receiveTrackData(track data)
 // of division points, we should try to look for tracks formed by (outer) division points ie
 // points on line AB but not in line segment AB with the correct proportion.
 
-void anaTrack::calcPath()
+void anaTrack::calcTrack()
 {
     // divPoints[i][j] = division point on line segment ij. (not hit events)
     // TDC is the distance from point i to the calculated track divided by drift velcoty.
@@ -108,6 +147,8 @@ void anaTrack::calcPath()
     // After scanning through all trakcs formed by (inner) division points and the best score
     // is still too small, it is likely that all hit points are all at one side of the track.
     // In this case, we will consider outer division points.
+    
+    /*
     if (score <= 3) {
         x1 = (trackData.hitData[0].x * trackData.hitData[7].TDC - trackData.hitData[7].x * trackData.hitData[0].TDC) / (trackData.hitData[7].TDC - trackData.hitData[0].TDC);
         y1 = (trackData.hitData[0].y * trackData.hitData[7].TDC - trackData.hitData[7].y * trackData.hitData[0].TDC) / (trackData.hitData[7].TDC - trackData.hitData[0].TDC);
@@ -118,14 +159,61 @@ void anaTrack::calcPath()
         m = (y1 - y2) / (x1 - x2);
         c = y1 - m_test * x1;
     }
+*/
+    checkTrack();
+
+    double sum_v = 0;
+    for (i = 0; i < hitsPerTrack; i++)
+        sum_v += dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c) / trackData.hitData[i].TDC;
+    
+    avgDriftVelocity = sum_v / double(hitsPerTrack);
 }
 
-double anaTrack::returnSlope()
+void anaTrack::outputData()
 {
-    return m;
+    if ( vetoTrack ) return;
+    for (int i = 0; i < hitsPerTrack; i++) fout << ang << " " << d[i] << " " << v[i] << endl; // [drift velo] = um/ns
 }
 
-double anaTrack::returnInterception()
+
+double anaTrack::returnSlope() {return m;}
+
+double anaTrack::returnInterception() {return c;}
+
+double anaTrack::returnAvgDriftVelocity() {return avgDriftVelocity;}
+
+bool anaTrack::trackRejected() {return vetoTrack;}
+
+/*
+double anaTrack::evaluateTrack(double slope, double interception)
 {
-    return c;
+    double assumedV;
+    double min = 999., max = -1.;
+    for (int x = 0; x < 8; x ++) {
+
+        assumedV = dist(trackData.hitData[x].x, trackData.hitData[x].y, slope, interception) / trackData.hitData[x].TDC;
+        
+        min = (min<assumedV?min:assumedV);
+        max = (max>assumedV?max:assumedV);
+    }
+    return max - min;
 }
+
+// Experiment
+void anaTrack::calcTrack_test()
+{
+    ofstream file("map.dat");
+    double step = 0.1;
+    double slope;
+    double interception;
+    for (double y1 = trackData.hitData[0].y - 0.5; y1 <= trackData.hitData[0].y + 0.5 ; y1 += step) {
+        for (double y2 = trackData.hitData[7].y - 0.5; y2 <= trackData.hitData[7].y + 0.5; y2 += step) {
+            slope = (y1 - y2) / (0.0 - 7.0);
+            interception = y1;
+
+            file << y1 << " " << y2 << " " << evaluateTrack(slope, interception) << endl;
+        }
+    }
+}
+
+*/
