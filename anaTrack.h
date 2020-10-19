@@ -1,3 +1,9 @@
+// This is a header file for anaTrack class. The class contains the analysis for 
+// a single track containing 8 hits. These parameters are determined
+//   - possible particle track (slope and y interception)
+//   - average drift velocty of the 8 hits
+// Name : C. Lin
+
 #ifndef ANATRACK_H
 #define ANATRACK_H
 
@@ -16,8 +22,6 @@ struct track
     // Each track contains 8 hits
     hit hitData[8];
 };
-
-//extern track trackData;
 
 class anaTrack
 {

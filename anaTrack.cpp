@@ -1,3 +1,6 @@
+// This is the implementation file for anaTrack.h
+// Name : C. Lin
+
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -6,13 +9,15 @@
 #include "anaTrack.h"
 using namespace std;
 
+
+// Various precisions to choose from. Numbers no smaller than 0.001 are recommended
 //#define ASmallNum      0.1
 //#define ASmallNum      0.01
 #define ASmallNum      0.001
 //define ASmallNum      0.0001
 //#define ASmallNum      0.00001
 
-ofstream fout("fitData.dat", std::ios_base::app);
+ofstream fout("fitData.dat", std::ios_base::app); // .dat file storing output data
 
 //constructor
 anaTrack::anaTrack(int n)
@@ -20,9 +25,8 @@ anaTrack::anaTrack(int n)
     hitsPerTrack = n;
     vetoTrack = 0;
 }
-
     
-double d[8], ang, v[8];
+double d[8], ang, v[8];  // Distances to track and drift velocities
 
 bool approxEqual(double a, double b)
 {
@@ -33,12 +37,11 @@ bool approxEqual(double a, double b)
 // Rreturn distance from point (x, y) to line y = mx + c
 double dist(double x, double y, double m, double c)
 {
-    double xx;
-    
-    xx = c + m * x - y;
-    return sqrt( xx * xx / (m * m + 1) ) * 10000.0; //[d] = um
+    double xx = c + m * x - y;
+    return sqrt( xx * xx / (m * m + 1) ); 
 }
 
+// Apply some cuts
 void anaTrack::checkTrack()
 {
     ang = atan(m) * 180.0 / M_PI;;
@@ -48,9 +51,9 @@ void anaTrack::checkTrack()
     }
 
     for (int i = 0; i < hitsPerTrack; i++){
-        d[i] = dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c); //[d] = um
+        d[i] = dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c) * 10000.0; //[d] = um
         v[i] = d[i] / trackData.hitData[i].TDC;
-        if (v[i] > 56.5 || v[i] < 48.5) { // cut out weird velocity. Limits are strick because the peak is sharp.
+        if (v[i] > 60.5 || v[i] < 44.5) { // cut out weird velocity. Limits are strick because the peak is sharp.
             vetoTrack = 1;
             return;
         }
@@ -67,15 +70,18 @@ void anaTrack::receiveTrackData(track data)
     }
 }
 
-
 // If a track passes through a point P on the line connecting A and B, where A and B 
 // are the hit wires, point P divides line segment AB with proportion equal to the distances
 // from the hit wires to the track.
 
 // If this track also passes through other (#hit - 1) division points, it is likely that
-// this is the track we are looking for. But if the track only passes through small number
-// of division points, we should try to look for tracks formed by (outer) division points ie
-// points on line AB but not in line segment AB with the correct proportion.
+// this is the track we are looking for. For example, point A is on the left side of the 
+// track while the 7 rest are at the right side, then the track should pass through (8 - 1)
+// division points.
+
+// But if the track only passes through small number of division points, we should try to 
+// look for tracks formed by (outer) division points ie points on line AB but not in line 
+// segment AB with the correct proportion.
 
 void anaTrack::calcTrack()
 {
@@ -89,6 +95,7 @@ void anaTrack::calcTrack()
     // Calculate division points
     for (i = 0; i < hitsPerTrack - 1; i++) {
         for (j = i+1; j < hitsPerTrack; j++) {
+            // Perhaps using trackData.hitData will be faster?
             x1 = trackData.hitData[i].x;
             y1 = trackData.hitData[i].y;
             t1 = trackData.hitData[i].TDC;
@@ -101,25 +108,28 @@ void anaTrack::calcTrack()
         }
     }
 
-    // Picking pairs of divPoints to for test tracks
+    // Picking pairs of divPoints to form test tracks
     double m_test, c_test, y_test;
     int score, score_test = 0;
 
+    // Picking point 1
     for (i = 0; i < hitsPerTrack - 1; i++){
         for (j = i+1; j < hitsPerTrack; j++) {
             x1 = divPoints[i][j].x;
             y1 = divPoints[i][j].y;
 
+            // Picking point 2
             for (k = i; k < hitsPerTrack - 1; k++){
                 for (l = (i==k?j:k+1); l < hitsPerTrack; l++){
                     if (i == k && j == l) continue;
                     x2 = divPoints[k][l].x;
                     y2 = divPoints[k][l].y;
 
+                    // Calculate test track
                     m_test = (y1 - y2) / (x1 - x2);
                     c_test = y1 - m_test * x1;
 
-                    // count score
+                    // Count score. score_test++ if track comes near enough to a division point
                     score_test = 0;
                     for (ii = 0; ii < hitsPerTrack - 1; ii++){
                         for (jj = ii+1; jj < hitsPerTrack; jj++){
@@ -133,16 +143,16 @@ void anaTrack::calcTrack()
                         m = m_test;
                         c = c_test;
                     }
-
-                    if (score >= hitsPerTrack -1) break;  // This means there is at least one point on the other side of the track
+                    if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
                 }
-                if (score >= hitsPerTrack -1) break;
+                if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
             }
-            if (score >= hitsPerTrack -1) break;
+            if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
         }
-        if (score >= hitsPerTrack -1) break;
+        if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
     }
 
+// C. Lin later found the "all points on one side" case can just be ignored
     //cout << "score before outer divPoints = " << score << endl;
     // After scanning through all trakcs formed by (inner) division points and the best score
     // is still too small, it is likely that all hit points are all at one side of the track.
@@ -160,12 +170,15 @@ void anaTrack::calcTrack()
         c = y1 - m_test * x1;
     }
 */
-    checkTrack();
+    checkTrack(); // Check various cuts
 
+
+    // Calculate drift velocity averaged over the 8 hits
     double sum_v = 0;
-    for (i = 0; i < hitsPerTrack; i++)
-        sum_v += dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c) / trackData.hitData[i].TDC;
-    
+    if (vetoTrack == 0){    
+        for (i = 0; i < hitsPerTrack; i++)
+            sum_v += dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c) * 10000.0 / trackData.hitData[i].TDC;
+    }
     avgDriftVelocity = sum_v / double(hitsPerTrack);
 }
 
@@ -175,7 +188,6 @@ void anaTrack::outputData()
     for (int i = 0; i < hitsPerTrack; i++) fout << ang << " " << d[i] << " " << v[i] << endl; // [drift velo] = um/ns
 }
 
-
 double anaTrack::returnSlope() {return m;}
 
 double anaTrack::returnInterception() {return c;}
@@ -184,6 +196,8 @@ double anaTrack::returnAvgDriftVelocity() {return avgDriftVelocity;}
 
 bool anaTrack::trackRejected() {return vetoTrack;}
 
+
+// Nothing to see below
 /*
 double anaTrack::evaluateTrack(double slope, double interception)
 {
@@ -191,7 +205,7 @@ double anaTrack::evaluateTrack(double slope, double interception)
     double min = 999., max = -1.;
     for (int x = 0; x < 8; x ++) {
 
-        assumedV = dist(trackData.hitData[x].x, trackData.hitData[x].y, slope, interception) / trackData.hitData[x].TDC;
+        assumedV = dist(trackData.hitData[x].x, trackData.hitData[x].y, slope, interception) * 10000.0 / trackData.hitData[x].TDC;
         
         min = (min<assumedV?min:assumedV);
         max = (max>assumedV?max:assumedV);
