@@ -1,6 +1,7 @@
 This is an exercise for C++ programming.
 
  - Compile
+ 
 To compile you can run the command
 
   g++ anaData.cpp anaTrack.cpp `root-config --cflags --libs`
@@ -9,6 +10,7 @@ You can ignore anything in the ./testcode directory asthey are not used in the
 final product.
 
  - Method
+ 
 If a track passes through a point P on the line connecting A and B, where A and B 
 are the hit wires, point P divides line segment AB with proportion equal to the
 distances from the hit wires to the track.
@@ -28,6 +30,7 @@ returns the track slope and y-interception. With the information, the average dr
 velocity and the average beam angle are calculated.
 
  - Output file
+ 
 The outfile contains two columns. From left to right is
 
  |  beam angle (deg)  |  drift velocity (um/ns)  |
