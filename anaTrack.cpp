@@ -1,36 +1,29 @@
 // This is the implementation file for anaTrack.h
 // Name : C. Lin
-
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <fstream>
 #include <algorithm>
+
+// user
 #include "anaTrack.h"
 using namespace std;
 
-
 // Various precisions to choose from. Numbers no smaller than 0.001 are recommended
-//#define ASmallNum      0.1
-//#define ASmallNum      0.01
-#define ASmallNum      0.001
-//define ASmallNum      0.0001
-//#define ASmallNum      0.00001
+//#define ASmallNum      0.001
+//#define ASmallNum      0.0001
+#define ASmallNum      0.00001
 
 ofstream fout("fitData.dat", std::ios_base::app); // .dat file storing output data
+double v[8];  // drift velocities
 
 //constructor
-anaTrack::anaTrack(int n)
-{
-    hitsPerTrack = n;
-    vetoTrack = 0;
-}
-    
-double d[8], ang, v[8];  // Distances to track and drift velocities
+anaTrack::anaTrack() {}
 
 bool approxEqual(double a, double b)
 {
-    if (abs(a - b) / b < ASmallNum) return 1;
+    if (abs(a - b) < ASmallNum * b) return 1;
     else return 0;
 }
 
@@ -42,32 +35,23 @@ double dist(double x, double y, double m, double c)
 }
 
 // Apply some cuts
-void anaTrack::checkTrack()
+void anaTrack::checkTrack(track &data)
 {
-    ang = atan(m) * 180.0 / M_PI;;
-    if ((ang >= 0.462 && ang <= 0.464) || (ang <= -0.462 && ang >= -0.464)) { // cut out the weird noise
+    beamAngle = atan(m) * 180.0 / M_PI;
+    if ((beamAngle >= 0.462 && beamAngle <= 0.464) || (beamAngle <= -0.462 && beamAngle >= -0.464)) { // cut out the weird noise
         vetoTrack = 1;
         return;
     }
-
-    for (int i = 0; i < hitsPerTrack; i++){
-        d[i] = dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c) * 10000.0; //[d] = um
-        v[i] = d[i] / trackData.hitData[i].TDC;
+    sum_v = 0.;
+    for (int i = 0; i < 8; i++){
+        v[i] = dist(data.hitData[i].x, data.hitData[i].y, m, c) * 10000.0 / data.hitData[i].TDC; // um/ns
         if (v[i] > 60.5 || v[i] < 44.5) { // cut out weird velocity. Limits are strick because the peak is sharp.
             vetoTrack = 1;
             return;
         }
+        sum_v += v[i];
     }
-}
-
-void anaTrack::receiveTrackData(track data)
-{
-    for (int i = 0; i < hitsPerTrack; i++){
-        trackData.hitData[i].x = data.hitData[i].x;
-        trackData.hitData[i].y = data.hitData[i].y;
-        trackData.hitData[i].TDC = data.hitData[i].TDC;
-        //cout << " (" << trackData.hitData[i].x << ", " << trackData.hitData[i].y << ")  " << trackData.hitData[i].TDC << endl;
-    }
+    avgDriftVelocity = sum_v / 8.0;
 }
 
 // If a track passes through a point P on the line connecting A and B, where A and B 
@@ -82,82 +66,58 @@ void anaTrack::receiveTrackData(track data)
 // But if the track only passes through small number of division points, we should try to 
 // look for tracks formed by (outer) division points ie points on line AB but not in line 
 // segment AB with the correct proportion.
-
-void anaTrack::calcTrack()
+void anaTrack::calcTrack(track &data)
 {
-    // divPoints[i][j] = division point on line segment ij. (not hit events)
-    // TDC is the distance from point i to the calculated track divided by drift velcoty.
-    hit divPoints[hitsPerTrack][hitsPerTrack];
+    vetoTrack = 0;
     double x1, y1, t1, x2, y2, t2;
+    int i, j, k, l;
 
-    int i, j, k, l, ii, jj;
-
+    k = 0;
     // Calculate division points
-    for (i = 0; i < hitsPerTrack - 1; i++) {
-        for (j = i+1; j < hitsPerTrack; j++) {
-            // Perhaps using trackData.hitData will be faster?
-            x1 = trackData.hitData[i].x;
-            y1 = trackData.hitData[i].y;
-            t1 = trackData.hitData[i].TDC;
-            x2 = trackData.hitData[j].x;
-            y2 = trackData.hitData[j].y;
-            t2 = trackData.hitData[j].TDC;
-
-            divPoints[i][j].x = ( t1*x2 + t2*x1 ) / ( t1 + t2 );
-            divPoints[i][j].y = ( t1*y2 + t2*y1 ) / ( t1 + t2 );
+    for (i = 0; i < 8 - 1; i++) {
+        for (j = i+1; j < 8; j++) {
+            t1 = data.hitData[i].TDC;
+            t2 = data.hitData[j].TDC;
+            
+            divPoints[k].x = ( t1*data.hitData[j].x + t2*data.hitData[i].x ) / ( t1 + t2 ); //divPoints[k].x = ( t1*x2 + t2*x1 ) / ( t1 + t2 );
+            divPoints[k].y = ( t1*data.hitData[j].y + t2*data.hitData[i].y ) / ( t1 + t2 ); //divPoints[k].y = ( t1*y2 + t2*y1 ) / ( t1 + t2 );
+            k++;
         }
     }
 
-    // Picking pairs of divPoints to form test tracks
     double m_test, c_test, y_test;
-    int score, score_test = 0;
+    int score = -999, score_test = 0;
+    // Picking pairs of divPoints to form test tracks
+    for (i = 0; i < 27; i ++ ){
+        x1 = divPoints[i].x;
+        y1 = divPoints[i].y;
 
-    // Picking point 1
-    for (i = 0; i < hitsPerTrack - 1; i++){
-        for (j = i+1; j < hitsPerTrack; j++) {
-            x1 = divPoints[i][j].x;
-            y1 = divPoints[i][j].y;
+        for (j = i+1; j < 28; j ++){
+            // x2 = divPoints[j].x;
+            // y2 = divPoints[j].y;
+            m_test = (y1 - divPoints[j].y) / (x1 - divPoints[j].x);
+            c_test = y1 - m_test * x1;
 
-            // Picking point 2
-            for (k = i; k < hitsPerTrack - 1; k++){
-                for (l = (i==k?j:k+1); l < hitsPerTrack; l++){
-                    if (i == k && j == l) continue;
-                    x2 = divPoints[k][l].x;
-                    y2 = divPoints[k][l].y;
-
-                    // Calculate test track
-                    m_test = (y1 - y2) / (x1 - x2);
-                    c_test = y1 - m_test * x1;
-
-                    // Count score. score_test++ if track comes near enough to a division point
-                    score_test = 0;
-                    for (ii = 0; ii < hitsPerTrack - 1; ii++){
-                        for (jj = ii+1; jj < hitsPerTrack; jj++){
-                            y_test = m_test * divPoints[ii][jj].x + c_test;
-                            if (approxEqual(y_test, divPoints[ii][jj].y)) score_test ++;
-                        }
-                    }
-                    // update best score
-                    if (score_test > score) {
-                        score = score_test;
-                        m = m_test;
-                        c = c_test;
-                    }
-                    if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
-                }
-                if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
+            score_test = 0;
+            for ( k = 0; k < 28; k++) {
+                // y_test = m_test * divPoints[k].x + c_test;
+                // if (approxEqual(y_test, divPoints[k].y)) score_test ++;
+                if (approxEqual(m_test * divPoints[k].x + c_test, divPoints[k].y)) score_test ++;
             }
-            if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
+            if (score_test > score) {
+                score = score_test;
+                m = m_test;
+                c = c_test;
+            }
+            if (score >= 7) break;
         }
-        if (score >= hitsPerTrack -1) break;  // If found a good enough track then terminate early
+        if (score >= 7) break;
     }
 
-// C. Lin later found the "all points on one side" case can just be ignored
-    //cout << "score before outer divPoints = " << score << endl;
+// Later found the "all points on one side" cases can just be ignored
     // After scanning through all trakcs formed by (inner) division points and the best score
     // is still too small, it is likely that all hit points are all at one side of the track.
     // In this case, we will consider outer division points.
-    
     /*
     if (score <= 3) {
         x1 = (trackData.hitData[0].x * trackData.hitData[7].TDC - trackData.hitData[7].x * trackData.hitData[0].TDC) / (trackData.hitData[7].TDC - trackData.hitData[0].TDC);
@@ -169,33 +129,30 @@ void anaTrack::calcTrack()
         m = (y1 - y2) / (x1 - x2);
         c = y1 - m_test * x1;
     }
-*/
-    checkTrack(); // Check various cuts
-
-
-    // Calculate drift velocity averaged over the 8 hits
-    double sum_v = 0;
-    if (vetoTrack == 0){    
-        for (i = 0; i < hitsPerTrack; i++)
-            sum_v += dist(trackData.hitData[i].x, trackData.hitData[i].y, m, c) * 10000.0 / trackData.hitData[i].TDC;
-    }
-    avgDriftVelocity = sum_v / double(hitsPerTrack);
+    */
+    checkTrack(data); // Check various cuts
 }
 
 void anaTrack::outputData()
 {
     if ( vetoTrack ) return;
-    for (int i = 0; i < hitsPerTrack; i++) fout << ang << " " << d[i] << " " << v[i] << endl; // [drift velo] = um/ns
+    for (int i = 0; i < 8; i++) fout << beamAngle << " " << v[i] << endl; // [drift velo] = um/ns
 }
 
 double anaTrack::returnSlope() {return m;}
-
 double anaTrack::returnInterception() {return c;}
-
 double anaTrack::returnAvgDriftVelocity() {return avgDriftVelocity;}
-
+double anaTrack::returnBeamAngle() {return beamAngle;}
 bool anaTrack::trackRejected() {return vetoTrack;}
 
+
+
+// Test : Connecting points (0, y1) and (7, y2) form a straight line. We know that signals 
+// are collected by the nearest wires, so we only need to search for y1 y2 in the range 
+// [Y+0.5, Y-0.5], where Y is the wire address. 
+// This transforms the task into a search in a 2D plane (ie y1 and y2), where the goal is
+// to find the best combination of (y1, y2) that fits the TDC data provided the best.
+// Use Monte Carlo method??
 
 // Nothing to see below
 /*

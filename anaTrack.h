@@ -1,4 +1,4 @@
-// This is a header file for anaTrack class. The class contains the analysis for 
+// This is the header file for anaTrack class. The class contains the analysis for 
 // a single track containing 8 hits. These parameters are determined
 //   - possible particle track (slope and y interception)
 //   - average drift velocty of the 8 hits
@@ -26,29 +26,27 @@ struct track
 class anaTrack
 {
 private:
-    int hitsPerTrack;
-    track trackData;
+    double sum_v;
+    double beamAngle;
     double m, c;     // track path : y = m*x + c
     double avgDriftVelocity;
     bool vetoTrack;
+    hit divPoints[28];
 public:
-    anaTrack(int n); // n = hitsPerTrack
-    void receiveTrackData(track data);
-    void calcTrack();
+    anaTrack();
+    void calcTrack(track &data);
     void outputData();
-    void checkTrack();
+    void checkTrack(track &data);
 
     bool trackRejected();
 
     double returnSlope();
     double returnInterception();
     double returnAvgDriftVelocity();
-
+    double returnBeamAngle();
 
     //void calcTrack_test();
     //double evaluateTrack(double slope, double interception);
-
-    // return slope and y-interception
 };
 
 
