@@ -3,7 +3,7 @@ This is an exercise for C++ programming.
  - Compile
 To compile you can run the command
 
-`g++ anaData.cpp anaTrack.cpp `root-config --cflags --libs``
+  g++ anaData.cpp anaTrack.cpp `root-config --cflags --libs`
 
 You can ignore anything in the ./testcode directory asthey are not used in the
 final product.
