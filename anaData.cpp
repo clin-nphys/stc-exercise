@@ -38,8 +38,12 @@ const double shift[8] = {0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5};
 int main()
 {
     bool outputData;
-    cout << "Output data? ( Yes:1 / No:0 ) ";
+    cout << endl;
+    cout << "  :: By choosing a different ASmallNum in anaTrack.cpp, you can trade computing" << endl;
+    cout << "     time with accuracy." << endl << endl;
+    cout << "  :: Output data? ( Yes:1 / No:0 ) ";
     cin >> outputData;
+    cout << endl;
 auto start = chrono::high_resolution_clock::now();  //Start timer
 
     //ifstream fin("onetrack.raw", std::ifstream::binary);
