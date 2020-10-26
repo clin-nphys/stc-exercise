@@ -70,36 +70,36 @@ void anaTrack::calcTrack(track &data)
 {
     vetoTrack = 0;
     double x1, y1, t1, x2, y2, t2;
-    int i, j, k, l;
-
-    k = 0;
+    //int i, j, k, l;
     // Calculate division points
-    for (i = 0; i < 8 - 1; i++) {
-        for (j = i+1; j < 8; j++) {
+
+    int ccc = 0;
+    for (int i = 0; i < 8 - 1; i++) {
+        for (int j = i+1; j < 8; j++) {
             t1 = data.hitData[i].TDC;
             t2 = data.hitData[j].TDC;
             
-            divPoints[k].x = ( t1*data.hitData[j].x + t2*data.hitData[i].x ) / ( t1 + t2 ); //divPoints[k].x = ( t1*x2 + t2*x1 ) / ( t1 + t2 );
-            divPoints[k].y = ( t1*data.hitData[j].y + t2*data.hitData[i].y ) / ( t1 + t2 ); //divPoints[k].y = ( t1*y2 + t2*y1 ) / ( t1 + t2 );
-            k++;
+            divPoints[ccc].x = ( t1*data.hitData[j].x + t2*data.hitData[i].x ) / ( t1 + t2 ); //divPoints[k].x = ( t1*x2 + t2*x1 ) / ( t1 + t2 );
+            divPoints[ccc].y = ( t1*data.hitData[j].y + t2*data.hitData[i].y ) / ( t1 + t2 ); //divPoints[k].y = ( t1*y2 + t2*y1 ) / ( t1 + t2 );
+            ccc++;
         }
     }
 
     double m_test, c_test, y_test;
     int score = -999, score_test = 0;
     // Picking pairs of divPoints to form test tracks
-    for (i = 0; i < 27; i ++ ){
+    for (int i = 0; i < 27; i ++ ){
         x1 = divPoints[i].x;
         y1 = divPoints[i].y;
 
-        for (j = i+1; j < 28; j ++){
+        for (int j = i+1; j < 28; j ++){
             // x2 = divPoints[j].x;
             // y2 = divPoints[j].y;
             m_test = (y1 - divPoints[j].y) / (x1 - divPoints[j].x);
             c_test = y1 - m_test * x1;
 
             score_test = 0;
-            for ( k = 0; k < 28; k++) {
+            for (int k = 0; k < 28; k++) {
                 // y_test = m_test * divPoints[k].x + c_test;
                 // if (approxEqual(y_test, divPoints[k].y)) score_test ++;
                 if (approxEqual(m_test * divPoints[k].x + c_test, divPoints[k].y)) score_test ++;
