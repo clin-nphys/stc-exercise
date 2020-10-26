@@ -20,19 +20,14 @@ likely that this is the track we are looking for. For example, point A is
 on the left side of the track while the 7 others are at the right side,
 then the track should pass through (8-1) division points.
 
-But if the track only passes through small number of division points, we
-should try to look for tracks formed by (outer) division points ie points
-on line AB but not in line segment AB with the correct proportion. (This
-feature was removed since it does not adequately improve the fit.)
-
-The program searches through possible tracks formed from pairs of division
+The programme searches through possible tracks formed from pairs of division
 points, and returns the track slope and y-interception. With the
 information, the average drift velocity and the average beam angle are
 calculated.
 
  - Output file
  
-The outfile contains two columns. From left to right is
+If enabled, the outfile contains two columns. From left to right is
 
  |  beam angle (deg)  |  drift velocity (um/ns)  |
 

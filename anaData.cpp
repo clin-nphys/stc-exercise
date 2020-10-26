@@ -37,13 +37,9 @@ const double shift[8] = {0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5};
 
 int main()
 {
-    bool outputData;
     cout << endl;
     cout << "  :: By choosing a different ASmallNum in anaTrack.cpp, you can trade computing" << endl;
     cout << "     time with accuracy." << endl << endl;
-    cout << "  :: Output data? ( Yes:1 / No:0 ) ";
-    cin >> outputData;
-    cout << endl;
 auto start = chrono::high_resolution_clock::now();  //Start timer
 
     //ifstream fin("onetrack.raw", std::ifstream::binary);
@@ -67,11 +63,8 @@ auto start = chrono::high_resolution_clock::now();  //Start timer
     TH1F *histVelo = new TH1F("hVelo", "Drift velocity distribution", 100, 52.6 - 2.0, 52.6 + 2.0);
     TH1F *histAng = new TH1F("h", "Beam angle distribution", 100, 6.2 - 20., 6.2 + 20.);
 
-    int xxx = 0;
     // while input and process the first of the eight hits, loop for the seven rest
     while( fin.read(reinterpret_cast<char*>(&dataChunck), sizeof (dataChunck)) ){
-        // if ( ++xxx == 100) break;
-
         TDC_tmp = 0.;
         x_tmp = 0.;
         y_tmp = 0.;
@@ -117,8 +110,8 @@ auto start = chrono::high_resolution_clock::now();  //Start timer
         trackNum ++;
         //cout << "Track " << trackNum << ": y = " << fixed << setprecision(5) << m << "x + " << c << endl;
         
-        //newTrackData.calcTrack_test();
-        if (outputData) newTrackData.outputData();
+        // newTrackData.calcTrack_test();
+        // newTrackData.outputData();
 
     }
 

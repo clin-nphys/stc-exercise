@@ -16,7 +16,8 @@ using namespace std;
 
 //#define ASmallNum      0.0001
 //#define ASmallNum      0.00005
-#define ASmallNum      0.00001
+#define ASmallNum      0.000015
+//#define ASmallNum      0.00001
 
 ofstream fout("fitData.dat", std::ios_base::app); // .dat file storing output data
 double v[8];  // drift velocities
@@ -41,10 +42,6 @@ double dist(double x, double y, double m, double c)
 void anaTrack::checkTrack(track &data)
 {
     beamAngle = atan(m) * 180.0 / M_PI;
-    if ((beamAngle >= 0.462 && beamAngle <= 0.464) || (beamAngle <= -0.462 && beamAngle >= -0.464)) { // cut out the weird noise
-        vetoTrack = 1;
-        return;
-    }
     sum_v = 0.;
     for (int i = 0; i < 8; i++){
         v[i] = dist(data.hitData[i].x, data.hitData[i].y, m, c) * 10000.0 / data.hitData[i].TDC; // um/ns
@@ -65,17 +62,11 @@ void anaTrack::checkTrack(track &data)
 // this is the track we are looking for. For example, point A is on the left side of the 
 // track while the 7 rest are at the right side, then the track should pass through (8 - 1)
 // division points.
-
-// But if the track only passes through small number of division points, we should try to 
-// look for tracks formed by (outer) division points ie points on line AB but not in line 
-// segment AB with the correct proportion.
 void anaTrack::calcTrack(track &data)
 {
     vetoTrack = 0;
-    double x1, y1, t1, x2, y2, t2;
-    //int i, j, k, l;
+    double x1, y1, t1, t2;
     // Calculate division points
-
     int ccc = 0;
     for (int i = 0; i < 8 - 1; i++) {
         for (int j = i+1; j < 8; j++) {
@@ -116,24 +107,7 @@ void anaTrack::calcTrack(track &data)
         }
         if (score >= 7) break;
     }
-
-// Later found the "all points on one side" cases can just be ignored
-    // After scanning through all trakcs formed by (inner) division points and the best score
-    // is still too small, it is likely that all hit points are all at one side of the track.
-    // In this case, we will consider outer division points.
-    /*
-    if (score <= 3) {
-        x1 = (trackData.hitData[0].x * trackData.hitData[7].TDC - trackData.hitData[7].x * trackData.hitData[0].TDC) / (trackData.hitData[7].TDC - trackData.hitData[0].TDC);
-        y1 = (trackData.hitData[0].y * trackData.hitData[7].TDC - trackData.hitData[7].y * trackData.hitData[0].TDC) / (trackData.hitData[7].TDC - trackData.hitData[0].TDC);
-
-        x2 = (trackData.hitData[0].x * trackData.hitData[3].TDC - trackData.hitData[3].x * trackData.hitData[0].TDC) / (trackData.hitData[3].TDC - trackData.hitData[0].TDC);
-        y2 = (trackData.hitData[0].y * trackData.hitData[3].TDC - trackData.hitData[3].y * trackData.hitData[0].TDC) / (trackData.hitData[3].TDC - trackData.hitData[0].TDC);
-
-        m = (y1 - y2) / (x1 - x2);
-        c = y1 - m_test * x1;
-    }
-    */
-    checkTrack(data); // Check various cuts
+    checkTrack(data); // Check velocities
 }
 
 void anaTrack::outputData()
