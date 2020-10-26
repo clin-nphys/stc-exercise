@@ -10,9 +10,12 @@
 #include "anaTrack.h"
 using namespace std;
 
-// Various precisions to choose from. Numbers no smaller than 0.001 are recommended
-//#define ASmallNum      0.001
+// Various precisions to choose from. 
+// By using a smaller number, you trade computing time for better accuracy.
+// Numbers no larger than 0.001 are recommended.
+
 //#define ASmallNum      0.0001
+//#define ASmallNum      0.00005
 #define ASmallNum      0.00001
 
 ofstream fout("fitData.dat", std::ios_base::app); // .dat file storing output data
