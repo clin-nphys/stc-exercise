@@ -1,6 +1,6 @@
 // Main programme for STC analysis exercise
 // Name : C. Lin
-// The programme reads in a piece of 16 bytes data representing a detection event.
+// The programme reads in a piece of 16 byte data representing a detection event.
 // The data is then analysed and a possible track formula is determined.
 // The distributions of drift velocity and beam angle are fitted with Gaussian, and 
 // the fitting parameters are displayed.
@@ -61,7 +61,7 @@ auto start = chrono::high_resolution_clock::now();  //Start timer
 
     // Histogrammes
     TH1F *histVelo = new TH1F("hVelo", "Drift velocity distribution", 100, 52.6 - 2.0, 52.6 + 2.0);
-    TH1F *histAng = new TH1F("h", "Beam angle distribution", 100, 6.2 - 20., 6.2 + 20.);
+    TH1F *histAng = new TH1F("hAng", "Beam angle distribution", 100, 6.2 - 20., 6.2 + 20.);
 
     // while input and process the first of the eight hits, loop for the seven rest
     while( fin.read(reinterpret_cast<char*>(&dataChunck), sizeof (dataChunck)) ){
@@ -100,10 +100,8 @@ auto start = chrono::high_resolution_clock::now();  //Start timer
         
         // If the track is good enough, fill the histogrammes
         if ( newTrackData.trackRejected() == 0){
-            
             histVelo->Fill( newTrackData.returnAvgDriftVelocity() );
             histAng->Fill( newTrackData.returnBeamAngle() );
-            
             goodHitNum += 8.0;
         }
 
