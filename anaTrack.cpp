@@ -19,7 +19,7 @@ using namespace std;
 #define ASmallNum      0.000015
 //#define ASmallNum      0.00001
 
-ofstream fout("fitData.dat", std::ios_base::app); // .dat file storing output data
+//ofstream fout("fitData.dat", std::ios_base::app); // .dat file storing output data
 double v[8];  // drift velocities
 
 //constructor
