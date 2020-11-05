@@ -113,7 +113,7 @@ void anaTrack::calcTrack(track &data)
 void anaTrack::outputData()
 {
     if ( vetoTrack ) return;
-    for (int i = 0; i < 8; i++) fout << beamAngle << " " << v[i] << endl; // [drift velo] = um/ns
+    //for (int i = 0; i < 8; i++) fout << beamAngle << " " << v[i] << endl; // [drift velo] = um/ns
 }
 
 double anaTrack::returnSlope() {return m;}
